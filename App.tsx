@@ -319,11 +319,12 @@ function App() {
   }, [collection]);
 
   const handleReceivedDiscovery = async (sn: string) => {
+    const handleReceivedDiscovery = async (sn: string) => {
     setLoading(true);
     try {
       const data = await identifyAnimal(sn);
-      const img = await generateAnimalImage(`Animal ${data.popularName}, realistic professional photography, bright lighting, white background.`);
-      setSharedDiscovery({ ...data, image: img });
+      const placeholder = `data:image/svg+xml;base64,${btoa(`<svg xmlns="http://www.w3.org/2000/svg" width="400" height="300" style="background:#f0fdf4"><text x="50%" y="50%" font-size="100" text-anchor="middle" dominant-baseline="middle">🐾</text></svg>`)}`;
+      setSharedDiscovery({ ...data, image: placeholder });
     } catch (e) {
       setError("Erro ao carregar figurinha compartilhada.");
     } finally {
