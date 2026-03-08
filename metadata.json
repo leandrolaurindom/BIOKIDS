@@ -1,0 +1,7 @@
+{
+  "name": "BioKids – Descobrindo o Mundo Animal",
+  "description": "An educational and interactive application for children aged 6-12 that helps identify animals and insects from photos or text descriptions, fostering a love for nature through gamification and fun facts.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
