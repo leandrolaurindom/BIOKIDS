@@ -1,79 +1,134 @@
-
 import React from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface MascotProps {
   message: string;
-  mood?: 'happy' | 'excited' | 'thinking' | 'offline';
+  mood: 'happy' | 'excited' | 'thinking' | 'offline';
 }
 
-export const Mascot: React.FC<MascotProps> = ({ message, mood = 'happy' }) => {
-  const bodyColor = mood === 'offline' ? '#6b7280' : '#ef4444';
-  const glowColor = mood === 'excited' ? '#fbbf24' : mood === 'offline' ? 'transparent' : '#86efac';
+export const Mascot: React.FC<MascotProps> = ({ message, mood }) => {
+  const moodColors = {
+    happy: '#e53e3e',
+    excited: '#dd6b20',
+    thinking: '#3182ce',
+    offline: '#718096',
+  };
+
+  const color = moodColors[mood];
 
   return (
-    <div className="flex items-center justify-center gap-4 my-4">
+    <div className="flex items-center gap-3 mb-6 p-3">
+      {/* Joaninha animada */}
       <motion.div
-        animate={{ y: [0, -6, 0] }}
-        transition={{ duration: 2.5, repeat: Infinity, ease: 'easeInOut' }}
-        className="relative flex-shrink-0"
+        animate={
+          mood === 'excited'
+            ? { rotate: [0, -10, 10, -10, 10, 0], scale: [1, 1.1, 1] }
+            : mood === 'thinking'
+            ? { y: [0, -4, 0] }
+            : mood === 'offline'
+            ? { opacity: [1, 0.6, 1] }
+            : { y: [0, -6, 0] }
+        }
+        transition={{
+          duration: mood === 'excited' ? 0.6 : 2,
+          repeat: Infinity,
+          ease: 'easeInOut',
+        }}
+        style={{ width: 72, height: 72, flexShrink: 0 }}
       >
-        {/* Glow ring */}
-        <motion.div
-          animate={{ scale: [1, 1.15, 1], opacity: [0.3, 0.6, 0.3] }}
-          transition={{ duration: 2, repeat: Infinity }}
-          className="absolute inset-0 rounded-full"
-          style={{ background: glowColor, filter: 'blur(8px)', zIndex: 0 }}
-        />
-        {/* Ladybug SVG */}
-        <svg width="72" height="72" viewBox="0 0 72 72" className="relative z-10 drop-shadow-lg">
-          {/* Body */}
-          <ellipse cx="36" cy="42" rx="24" ry="20" fill={bodyColor} />
-          {/* Wing divider */}
-          <line x1="36" y1="24" x2="36" y2="62" stroke="#111" strokeWidth="2.5" />
-          {/* Head */}
-          <circle cx="36" cy="22" r="14" fill="#111" />
-          {/* Eyes */}
-          <circle cx="30" cy="20" r="4" fill="white" />
-          <circle cx="42" cy="20" r="4" fill="white" />
-          {/* Eye pupils - no animation to avoid framer-motion SVG bug */}
-          <circle cx={31} cy={20} r={2.5} fill="#222" />
-          <circle cx={43} cy={20} r={2.5} fill="#222" />
-          {/* Eye shine */}
-          <circle cx="32" cy="18.5" r="1" fill="white" opacity="0.8" />
-          <circle cx="44" cy="18.5" r="1" fill="white" opacity="0.8" />
-          {/* Smile */}
-          <path d={mood === 'excited' ? "M 30 27 Q 36 33 42 27" : "M 30 26 Q 36 31 42 26"} stroke="white" strokeWidth="2" fill="none" strokeLinecap="round" />
-          {/* Antennae */}
-          <line x1="28" y1="10" x2="22" y2="3" stroke="#111" strokeWidth="2" strokeLinecap="round" />
-          <line x1="44" y1="10" x2="50" y2="3" stroke="#111" strokeWidth="2" strokeLinecap="round" />
-          <circle cx="22" cy="3" r="2.5" fill="#111" />
-          <circle cx="50" cy="3" r="2.5" fill="#111" />
-          {/* Spots */}
-          <circle cx="24" cy="40" r="6" fill="#111" opacity="0.4" />
-          <circle cx="48" cy="40" r="6" fill="#111" opacity="0.4" />
-          <circle cx="27" cy="54" r="4.5" fill="#111" opacity="0.4" />
-          <circle cx="45" cy="54" r="4.5" fill="#111" opacity="0.4" />
-          {/* Excited stars */}
-          {mood === 'excited' && (
-            <>
-              <motion.text x="58" y="16" fontSize="10" animate={{ opacity: [0, 1, 0], y: [16, 10, 16] }} transition={{ duration: 1.5, repeat: Infinity }}>✨</motion.text>
-              <motion.text x="2" y="20" fontSize="10" animate={{ opacity: [0, 1, 0], y: [20, 14, 20] }} transition={{ duration: 1.5, repeat: Infinity, delay: 0.5 }}>⭐</motion.text>
-            </>
+        <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" width="72" height="72">
+          {/* Sombra */}
+          <ellipse cx="50" cy="95" rx="22" ry="5" fill="rgba(0,0,0,0.15)" />
+
+          {/* Corpo principal */}
+          <motion.circle
+            cx="50" cy="58" r="36"
+            fill={color}
+            animate={{ scale: mood === 'excited' ? [1, 1.05, 1] : 1 }}
+            transition={{ duration: 0.4, repeat: Infinity }}
+          />
+
+          {/* Linha central do corpo */}
+          <line x1="50" y1="22" x2="50" y2="94" stroke="#7b0000" strokeWidth="2.5" />
+
+          {/* Pintas */}
+          <circle cx="35" cy="52" r="7" fill="#7b0000" opacity="0.85" />
+          <circle cx="65" cy="52" r="7" fill="#7b0000" opacity="0.85" />
+          <circle cx="33" cy="70" r="5.5" fill="#7b0000" opacity="0.85" />
+          <circle cx="67" cy="70" r="5.5" fill="#7b0000" opacity="0.85" />
+          <circle cx="50" cy="80" r="4.5" fill="#7b0000" opacity="0.7" />
+
+          {/* Cabeca */}
+          <circle cx="50" cy="22" r="18" fill="#1a1a1a" />
+
+          {/* Olhos */}
+          <circle cx="43" cy="18" r="6" fill="white" />
+          <circle cx="57" cy="18" r="6" fill="white" />
+
+          {/* Pupilas */}
+          <motion.circle
+            cx="44" cy="18" r="3.5" fill="#1a1a1a"
+            animate={mood === 'thinking' ? { cx: [44, 46, 44] } : {}}
+            transition={{ duration: 1.5, repeat: Infinity }}
+          />
+          <motion.circle
+            cx="58" cy="18" r="3.5" fill="#1a1a1a"
+            animate={mood === 'thinking' ? { cx: [58, 60, 58] } : {}}
+            transition={{ duration: 1.5, repeat: Infinity }}
+          />
+
+          {/* Brilho nos olhos */}
+          <circle cx="46" cy="16" r="1.5" fill="white" />
+          <circle cx="60" cy="16" r="1.5" fill="white" />
+
+          {/* Antenas */}
+          <motion.line
+            x1="43" y1="6" x2="35" y2="-2"
+            stroke="#1a1a1a" strokeWidth="2" strokeLinecap="round"
+            animate={{ rotate: mood === 'happy' ? [0, 5, 0, -5, 0] : 0 }}
+            transition={{ duration: 2, repeat: Infinity, transformOrigin: '43px 6px' }}
+          />
+          <motion.line
+            x1="57" y1="6" x2="65" y2="-2"
+            stroke="#1a1a1a" strokeWidth="2" strokeLinecap="round"
+            animate={{ rotate: mood === 'happy' ? [0, -5, 0, 5, 0] : 0 }}
+            transition={{ duration: 2, repeat: Infinity, transformOrigin: '57px 6px' }}
+          />
+          <circle cx="35" cy="-2" r="3" fill="#1a1a1a" />
+          <circle cx="65" cy="-2" r="3" fill="#1a1a1a" />
+
+          {/* Sorriso */}
+          {mood !== 'offline' && (
+            <path
+              d={mood === 'excited' ? "M 43 27 Q 50 33 57 27" : "M 44 26 Q 50 31 56 26"}
+              stroke="white" strokeWidth="2" fill="none" strokeLinecap="round"
+            />
           )}
+          {mood === 'offline' && (
+            <line x1="44" y1="28" x2="56" y2="28" stroke="white" strokeWidth="2" strokeLinecap="round" />
+          )}
+
+          {/* Brilho no corpo */}
+          <ellipse cx="38" cy="40" rx="8" ry="5" fill="white" opacity="0.2" transform="rotate(-30 38 40)" />
         </svg>
       </motion.div>
 
-      <motion.div
-        initial={{ opacity: 0, scale: 0.9 }}
-        animate={{ opacity: 1, scale: 1 }}
-        key={message}
-        className="relative bg-white dark:bg-gray-700 px-4 py-3 rounded-2xl shadow-md max-w-[220px] border-2 border-yellow-400"
-      >
-        <p className="text-gray-700 dark:text-gray-200 text-sm font-semibold leading-snug">{message}</p>
-        {/* Speech bubble tail */}
-        <div className="absolute left-0 top-1/2 -translate-x-2 -translate-y-1/2 w-3 h-3 bg-white dark:bg-gray-700 rotate-45 border-b-2 border-l-2 border-yellow-400" />
-      </motion.div>
+      {/* Balao de fala */}
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={message}
+          initial={{ opacity: 0, x: -10, scale: 0.95 }}
+          animate={{ opacity: 1, x: 0, scale: 1 }}
+          exit={{ opacity: 0, x: 10, scale: 0.95 }}
+          transition={{ duration: 0.3 }}
+          className="relative bg-white dark:bg-gray-800 rounded-2xl rounded-tl-none px-4 py-3 shadow-md border border-gray-100 dark:border-gray-700 max-w-xs"
+        >
+          <div className="absolute -left-2 top-3 w-0 h-0"
+            style={{ borderTop: '8px solid transparent', borderBottom: '8px solid transparent', borderRight: '10px solid white' }}
+          />
+          <p className="text-sm font-bold text-gray-700 dark:text-gray-200 leading-snug">{message}</p>
+        </motion.div>
+      </AnimatePresence>
     </div>
   );
 };

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { identifyAnimal, generateAnimalImage } from './services/geminiService';
+import { identifyAnimal, generateAnimalImage, getAnimalOfTheDay } from './services/geminiService';
 import { encodeDiscovery, decodeDiscovery, buildShareUrl } from './services/shareService';
 import { Animal } from './types';
 import { useSpeechSynthesis } from './hooks/useSpeechSynthesis';
@@ -17,6 +17,7 @@ import { ShareIcon } from './components/icons/ShareIcon';
 import { Achievements, AchievementToast, ACHIEVEMENTS, Achievement } from './components/Achievements';
 
 const STORAGE_KEY = 'biokids-v5-final';
+const AOD_STORAGE_KEY = 'biokids-aod-v1';
 
 const base64ToFile = async (base64String: string, fileName: string): Promise<File> => {
   const res = await fetch(base64String);
@@ -74,19 +75,19 @@ const ResultCard: React.FC<{ animal: Animal; onShowCollection: () => void }> = (
 
     const handleShareLink = async () => {
         const shareUrl = buildShareUrl(animal);
-        const shareText = `Olha que legal! Encontrei um(a) ${animal.popularName} no BioKids! Veja e adicione ao seu album:`;
+        const shareText = `Olha que legal! Encontrei um(a) ${animal.popularName} no BioKids!`;
         const shareData = { title: `BioKids: ${animal.popularName}`, text: shareText, url: shareUrl };
         if (navigator.share) {
             try { await navigator.share(shareData); }
             catch (err) {
               if ((err as Error).name !== 'AbortError') {
                   await navigator.clipboard.writeText(`${shareData.text}\n\n${shareData.url}`);
-                  alert('Link copiado! Cole no seu chat.');
+                  alert('Link copiado!');
               }
             }
         } else {
             await navigator.clipboard.writeText(`${shareData.text}\n\n${shareData.url}`);
-            alert('Link copiado para a area de transferencia!');
+            alert('Link copiado!');
         }
     };
 
@@ -100,11 +101,8 @@ const ResultCard: React.FC<{ animal: Animal; onShowCollection: () => void }> = (
             if (animal.image && navigator.share) {
                 const imageFile = await base64ToFile(animal.image, `${animal.popularName.toLowerCase()}.jpg`);
                 const shareData: ShareData = { text: textReport, files: [imageFile], title: animal.popularName };
-                if (navigator.canShare && navigator.canShare({ files: [imageFile] })) {
-                    await navigator.share(shareData);
-                } else {
-                    await navigator.share({ text: textReport });
-                }
+                if (navigator.canShare && navigator.canShare({ files: [imageFile] })) await navigator.share(shareData);
+                else await navigator.share({ text: textReport });
             } else {
                 if (navigator.share) await navigator.share({ text: textReport });
                 else { await navigator.clipboard.writeText(textReport); alert('Ficha copiada!'); }
@@ -114,8 +112,7 @@ const ResultCard: React.FC<{ animal: Animal; onShowCollection: () => void }> = (
 
     const InfoRow: React.FC<{ label: string; value: string; index: number }> = ({ label, value, index }) => (
         <motion.div
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
+            initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.2 + index * 0.1 }}
             className="flex items-center justify-between py-1.5 border-b border-gray-100 dark:border-gray-700 last:border-0"
         >
@@ -130,24 +127,15 @@ const ResultCard: React.FC<{ animal: Animal; onShowCollection: () => void }> = (
     );
 
     return (
-        <motion.div
-            initial={{ opacity: 0, scale: 0.9, y: 20 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
+        <motion.div initial={{ opacity: 0, scale: 0.9, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }}
             className="bg-white dark:bg-gray-800 rounded-3xl shadow-xl p-5 w-full max-w-3xl mx-auto my-6 border-2 border-yellow-300 relative overflow-hidden"
         >
-            <motion.div
-                className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-yellow-400 via-orange-500 to-yellow-400"
-                animate={{ x: ['-100%', '100%'] }}
-                transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
-            />
+            <motion.div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-yellow-400 via-orange-500 to-yellow-400"
+                animate={{ x: ['-100%', '100%'] }} transition={{ duration: 3, repeat: Infinity, ease: "linear" }} />
             <div className="grid md:grid-cols-2 gap-5">
                 <div className="relative">
-                  <motion.img
-                    whileHover={{ scale: 1.05, rotate: 1 }}
-                    src={animal.image}
-                    alt={animal.popularName}
-                    className="w-full h-60 object-cover rounded-2xl shadow-sm border-2 border-white cursor-zoom-in"
-                  />
+                  <motion.img whileHover={{ scale: 1.05, rotate: 1 }} src={animal.image} alt={animal.popularName}
+                    className="w-full h-60 object-cover rounded-2xl shadow-sm border-2 border-white cursor-zoom-in" />
                   <div className="absolute bottom-2 right-2 bg-white/80 backdrop-blur-sm px-2 py-1 rounded-lg text-[8px] font-bold text-green-700 uppercase">Foto do Explorador</div>
                 </div>
                 <div className="flex flex-col">
@@ -162,19 +150,18 @@ const ResultCard: React.FC<{ animal: Animal; onShowCollection: () => void }> = (
                     </div>
                     {animal.identificationReasoning && (
                         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.6 }}
-                            className="mb-4 p-3 bg-blue-50 dark:bg-blue-900/30 rounded-xl border border-blue-100 dark:border-blue-800"
-                        >
+                            className="mb-4 p-3 bg-blue-50 dark:bg-blue-900/30 rounded-xl border border-blue-100 dark:border-blue-800">
                             <h4 className="text-[8px] font-black text-blue-600 uppercase mb-1">Nota do Biologo</h4>
                             <p className="text-[11px] text-blue-800 dark:text-blue-200 leading-tight italic">"{animal.identificationReasoning}"</p>
                         </motion.div>
                     )}
                     <div className="grid grid-cols-2 gap-2">
                         <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={handleShareLink}
-                            className="bg-blue-600 text-white py-2.5 rounded-xl font-bold text-[10px] flex items-center justify-center gap-1.5 shadow-sm transition-all">
+                            className="bg-blue-600 text-white py-2.5 rounded-xl font-bold text-[10px] flex items-center justify-center gap-1.5 shadow-sm">
                             <ShareIcon className="w-3.5 h-3.5" /> TROCAR FIGURINHA
                         </motion.button>
                         <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={handleShareComplete}
-                            className="bg-green-500 text-white py-2.5 rounded-xl font-bold text-[10px] flex items-center justify-center gap-1.5 shadow-sm transition-all">
+                            className="bg-green-500 text-white py-2.5 rounded-xl font-bold text-[10px] flex items-center justify-center gap-1.5 shadow-sm">
                             <SparklesIcon className="w-3.5 h-3.5" /> ENVIAR FICHA
                         </motion.button>
                     </div>
@@ -185,6 +172,43 @@ const ResultCard: React.FC<{ animal: Animal; onShowCollection: () => void }> = (
             </button>
         </motion.div>
     );
+};
+
+// Card do Animal do Dia
+const AnimalDoDiaCard: React.FC<{ animal: Animal | null; loading: boolean; onCollect: (a: Animal) => void; alreadyCollected: boolean }> = ({ animal, loading, onCollect, alreadyCollected }) => {
+  const { speak } = useSpeechSynthesis();
+  if (loading) return (
+    <div className="bg-gradient-to-br from-yellow-400 to-orange-500 rounded-3xl p-5 mb-6 text-center shadow-xl">
+      <p className="font-black text-white text-lg">🔍 Buscando animal do dia...</p>
+      <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-white border-t-transparent mt-3"></div>
+    </div>
+  );
+  if (!animal) return null;
+  return (
+    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
+      className="bg-gradient-to-br from-yellow-400 to-orange-500 rounded-3xl p-5 mb-6 shadow-xl relative overflow-hidden">
+      <div className="absolute top-3 right-3 bg-white text-orange-500 text-[9px] font-black px-2 py-1 rounded-full shadow">NOVO!</div>
+      <h3 className="text-white font-black text-xs uppercase tracking-widest mb-3 flex items-center gap-1">✨ Animal do Dia ✨</h3>
+      <div className="flex gap-4">
+        <img src={animal.image} alt={animal.popularName} className="w-24 h-24 object-cover rounded-2xl shadow-md border-2 border-white/50 flex-shrink-0" />
+        <div className="flex-1">
+          <h4 className="text-white font-black text-xl leading-tight">{animal.popularName}</h4>
+          <p className="text-white/80 text-[10px] italic mb-2">{animal.scientificName}</p>
+          <p className="text-white text-xs leading-snug line-clamp-3">"{animal.funFact}"</p>
+        </div>
+      </div>
+      <div className="flex gap-2 mt-3">
+        <button onClick={() => speak(animal.funFact)}
+          className="flex-1 bg-white/20 text-white font-black text-[10px] py-2 rounded-xl hover:bg-white/30 transition-all">
+          🔊 OUVIR CURIOSIDADE
+        </button>
+        <button onClick={() => onCollect(animal)} disabled={alreadyCollected}
+          className={`flex-1 font-black text-[10px] py-2 rounded-xl transition-all ${alreadyCollected ? 'bg-white/20 text-white/60' : 'bg-white text-orange-500 shadow-md hover:scale-105'}`}>
+          {alreadyCollected ? '✅ COLETADO' : '⭐ COLETAR'}
+        </button>
+      </div>
+    </motion.div>
+  );
 };
 
 function App() {
@@ -204,6 +228,9 @@ function App() {
   const [sharedDiscovery, setSharedDiscovery] = useState<Omit<Animal, 'id'> | null>(null);
   const [newAchievement, setNewAchievement] = useState<Achievement | null>(null);
   const [previousCount, setPreviousCount] = useState(0);
+  const [animalDoDia, setAnimalDoDia] = useState<Animal | null>(null);
+  const [loadingAOD, setLoadingAOD] = useState(false);
+  const [showAOD, setShowAOD] = useState(false);
 
   useEffect(() => {
     const saved = localStorage.getItem(STORAGE_KEY);
@@ -243,6 +270,31 @@ function App() {
     setPreviousCount(collection.length);
   }, [collection]);
 
+  const handleLoadAOD = async () => {
+    setShowAOD(true);
+    if (animalDoDia) return; // ja carregado
+    const today = new Date().toISOString().split('T')[0];
+    const savedAOD = localStorage.getItem(AOD_STORAGE_KEY);
+    if (savedAOD) {
+      try {
+        const parsed = JSON.parse(savedAOD);
+        if (parsed.date === today) { setAnimalDoDia(parsed.animal); return; }
+      } catch (e) {}
+    }
+    setLoadingAOD(true);
+    try {
+      const aodData = await getAnimalOfTheDay(today);
+      const image = await generateAnimalImage(`Professional wildlife photography of ${aodData.popularName}, close up, natural lighting.`);
+      const animal: Animal = { ...aodData, id: `aod-${today}`, image };
+      setAnimalDoDia(animal);
+      localStorage.setItem(AOD_STORAGE_KEY, JSON.stringify({ date: today, animal }));
+    } catch (e) {
+      console.error("AOD error", e);
+    } finally {
+      setLoadingAOD(false);
+    }
+  };
+
   const handleReceivedDiscovery = async (sn: string) => {
     setLoading(true);
     try {
@@ -257,15 +309,9 @@ function App() {
   };
 
   const handleSubmit = async () => {
-    if (!isOnline) {
-      setError('Voce esta offline! Conecte-se a internet para investigar novos animais.');
-      return;
-    }
+    if (!isOnline) { setError('Voce esta offline!'); return; }
     const source = activeTab === 'photo' ? imageFile : description;
-    if (!source) {
-      setError('Tire uma foto ou escreva o que viu primeiro!');
-      return;
-    }
+    if (!source) { setError('Tire uma foto ou escreva o que viu primeiro!'); return; }
 
     setLoading(true);
     setError(null);
@@ -273,45 +319,24 @@ function App() {
 
     try {
       let finalSource: File | string = source;
-      if (activeTab === 'photo' && imageFile) {
-        finalSource = await resizeImage(imageFile);
-      }
+      if (activeTab === 'photo' && imageFile) finalSource = await resizeImage(imageFile);
 
-      // Cache por hash - mesma foto = mesmo resultado
       let imageHash = '';
       if (finalSource instanceof File) {
         imageHash = await getImageHash(finalSource);
         const cached = collection.find(a => (a as any).imageHash === imageHash);
-        if (cached) {
-          setResult(cached);
-          setLoading(false);
-          return;
-        }
+        if (cached) { setResult(cached); setLoading(false); return; }
       }
 
       const animalData = await identifyAnimal(finalSource);
-
       const existsByName = collection.find(a => a.scientificName.toLowerCase() === animalData.scientificName.toLowerCase());
-      if (existsByName) {
-        setResult(existsByName);
-        setLoading(false);
-        return;
-      }
+      if (existsByName) { setResult(existsByName); setLoading(false); return; }
 
       let imageB64 = '';
-      if (activeTab === 'photo' && finalSource instanceof File) {
-        imageB64 = await fileToBase64(finalSource);
-      } else {
-        imageB64 = await generateAnimalImage(`Uma foto nitida e profissional de um(a) ${animalData.popularName} na natureza.`);
-      }
+      if (activeTab === 'photo' && finalSource instanceof File) imageB64 = await fileToBase64(finalSource);
+      else imageB64 = await generateAnimalImage(`Uma foto nitida e profissional de um(a) ${animalData.popularName} na natureza.`);
 
-      const newAnimal = {
-        ...animalData,
-        id: `${animalData.scientificName}-${Date.now()}`,
-        image: imageB64,
-        imageHash,
-      } as Animal & { imageHash: string };
-
+      const newAnimal = { ...animalData, id: `${animalData.scientificName}-${Date.now()}`, image: imageB64, imageHash } as Animal & { imageHash: string };
       setCollection(prev => [newAnimal, ...prev]);
       setResult(newAnimal);
     } catch (err) {
@@ -319,6 +344,11 @@ function App() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleCollectAOD = (animal: Animal) => {
+    const exists = collection.find(a => a.scientificName.toLowerCase() === animal.scientificName.toLowerCase());
+    if (!exists) { setCollection(prev => [animal, ...prev]); setResult(animal); }
   };
 
   return (
@@ -329,10 +359,7 @@ function App() {
            <div>
              <div className="flex items-center gap-2">
                <h1 className="text-xl font-black tracking-tight uppercase leading-none">BioKids</h1>
-               {!isOnline && (
-                 <motion.span initial={{ opacity: 0, scale: 0.5 }} animate={{ opacity: 1, scale: 1 }}
-                   className="bg-red-500 text-[8px] px-1.5 py-0.5 rounded-full font-black uppercase">Offline</motion.span>
-               )}
+               {!isOnline && <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="bg-red-500 text-[8px] px-1.5 py-0.5 rounded-full font-black uppercase">Offline</motion.span>}
              </div>
              <div className="flex items-center gap-1 mt-0.5">
                 <div className="w-16 h-1.5 bg-green-800 rounded-full overflow-hidden">
@@ -342,26 +369,37 @@ function App() {
              </div>
            </div>
         </div>
-        <button onClick={() => setShowCollection(true)} className="bg-yellow-400 text-green-900 font-black py-1.5 px-4 rounded-xl text-[10px] shadow-md border-b-2 border-yellow-600 active:translate-y-0.5 active:border-b-0 transition-all">
-          ALBUM
-        </button>
+        <div className="flex gap-2">
+          <button onClick={handleLoadAOD} className="bg-yellow-300 text-green-900 font-black py-1.5 px-3 rounded-xl text-[10px] shadow-md border-b-2 border-yellow-500 active:translate-y-0.5 transition-all">
+            ✨ DIA
+          </button>
+          <button onClick={() => setShowCollection(true)} className="bg-yellow-400 text-green-900 font-black py-1.5 px-4 rounded-xl text-[10px] shadow-md border-b-2 border-yellow-600 active:translate-y-0.5 transition-all">
+            ALBUM
+          </button>
+        </div>
       </header>
 
       <main className="container mx-auto p-4 max-w-2xl">
         <Mascot
           message={
-            !isOnline
-              ? "Voce esta offline, mas ainda pode ver seu album!"
-              : result
-                ? `Incrivel! ${result.popularName} catalogado! 🎉`
-                : loading
-                  ? "Analisando... aguarde um momento!"
-                  : "Oi! Eu sou a Jojo. Vamos explorar a natureza hoje?"
+            !isOnline ? "Voce esta offline, mas ainda pode ver seu album!"
+            : result ? `Incrivel! ${result.popularName} catalogado! 🎉`
+            : loading ? "Analisando... aguarde um momento!"
+            : "Oi! Eu sou a Jojo. Vamos explorar a natureza hoje?"
           }
           mood={!isOnline ? 'offline' : result ? 'excited' : loading ? 'thinking' : 'happy'}
         />
 
         <Achievements count={collection.length} previousCount={previousCount} />
+
+        {showAOD && (
+          <AnimalDoDiaCard
+            animal={animalDoDia}
+            loading={loadingAOD}
+            onCollect={handleCollectAOD}
+            alreadyCollected={!!collection.find(a => a.scientificName.toLowerCase() === animalDoDia?.scientificName.toLowerCase())}
+          />
+        )}
 
         <div className="bg-white dark:bg-gray-800 p-5 rounded-3xl shadow-xl border-b-4 border-green-500">
             <div className="flex gap-1 mb-4 p-1 bg-gray-100 dark:bg-gray-700 rounded-2xl">
@@ -431,22 +469,16 @@ function App() {
         onSave={() => {
           if (sharedDiscovery) {
             const na: Animal = { ...sharedDiscovery, id: `${sharedDiscovery.scientificName}-${Date.now()}` };
-            setCollection(prev => [na, ...prev]);
-            setResult(na);
-            setSharedDiscovery(null);
+            setCollection(prev => [na, ...prev]); setResult(na); setSharedDiscovery(null);
           }
         }}
         onClose={() => setSharedDiscovery(null)}
       />
 
-      <Collection
-        isOpen={showCollection}
-        onClose={() => setShowCollection(false)}
-        collection={collection}
+      <Collection isOpen={showCollection} onClose={() => setShowCollection(false)} collection={collection}
         onRemove={(id) => setCollection(prev => prev.filter(a => a.id !== id))}
         onClear={() => { if(confirm("Apagar seu progresso?")) { setCollection([]); localStorage.removeItem(STORAGE_KEY); } }}
-        onImport={(imp) => setCollection(imp)}
-      />
+        onImport={(imp) => setCollection(imp)} />
 
       <Quiz isOpen={showQuiz} onClose={() => setShowQuiz(false)} collection={collection} />
       <HabitatGame isOpen={showHabitatGame} onClose={() => setShowHabitatGame(false)} collection={collection} />
