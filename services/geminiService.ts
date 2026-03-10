@@ -81,7 +81,7 @@ Seja extremamente consistente: a mesma imagem deve sempre resultar na mesma iden
 
   try {
     const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash', 
+      model: 'gemini-2.0-flash', 
       contents,
       config: {
         responseMimeType: "application/json",
@@ -140,7 +140,7 @@ export const getAnimalOfTheDay = async (dateStr: string): Promise<Omit<Animal, '
 
   try {
     const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
+      model: 'gemini-2.0-flash',
       contents: { parts: [{ text: `${systemInstruction}\n${prompt}` }] },
       config: {
         responseMimeType: "application/json",
