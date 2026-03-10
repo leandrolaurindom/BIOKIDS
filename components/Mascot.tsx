@@ -7,109 +7,73 @@ interface MascotProps {
 }
 
 export const Mascot: React.FC<MascotProps> = ({ message, mood }) => {
-  const moodColors = {
-    happy: '#e53e3e',
-    excited: '#dd6b20',
-    thinking: '#3182ce',
-    offline: '#718096',
-  };
+  const bodyColor = mood === 'offline' ? '#718096' : mood === 'thinking' ? '#3182ce' : '#e53e3e';
 
-  const color = moodColors[mood];
+  const bodyAnim =
+    mood === 'excited'
+      ? { rotate: [0, -10, 10, -10, 10, 0], scale: [1, 1.1, 1] }
+      : mood === 'thinking'
+      ? { y: [0, -4, 0] }
+      : mood === 'offline'
+      ? { opacity: [1, 0.6, 1] }
+      : { y: [0, -6, 0] };
 
   return (
     <div className="flex items-center gap-3 mb-6 p-3">
-      {/* Joaninha animada */}
       <motion.div
-        animate={
-          mood === 'excited'
-            ? { rotate: [0, -10, 10, -10, 10, 0], scale: [1, 1.1, 1] }
-            : mood === 'thinking'
-            ? { y: [0, -4, 0] }
-            : mood === 'offline'
-            ? { opacity: [1, 0.6, 1] }
-            : { y: [0, -6, 0] }
-        }
-        transition={{
-          duration: mood === 'excited' ? 0.6 : 2,
-          repeat: Infinity,
-          ease: 'easeInOut',
-        }}
+        animate={bodyAnim}
+        transition={{ duration: mood === 'excited' ? 0.6 : 2, repeat: Infinity, ease: 'easeInOut' }}
         style={{ width: 72, height: 72, flexShrink: 0 }}
       >
-        <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" width="72" height="72">
+        <svg viewBox="0 0 100 110" xmlns="http://www.w3.org/2000/svg" width="72" height="72">
           {/* Sombra */}
-          <ellipse cx="50" cy="95" rx="22" ry="5" fill="rgba(0,0,0,0.15)" />
+          <ellipse cx="50" cy="106" rx="22" ry="4" fill="rgba(0,0,0,0.12)" />
 
-          {/* Corpo principal */}
-          <motion.circle
-            cx="50" cy="58" r="36"
-            fill={color}
-            animate={{ scale: mood === 'excited' ? [1, 1.05, 1] : 1 }}
-            transition={{ duration: 0.4, repeat: Infinity }}
-          />
+          {/* Corpo */}
+          <circle cx="50" cy="68" r="34" fill={bodyColor} />
 
-          {/* Linha central do corpo */}
-          <line x1="50" y1="22" x2="50" y2="94" stroke="#7b0000" strokeWidth="2.5" />
+          {/* Linha central */}
+          <line x1="50" y1="34" x2="50" y2="102" stroke="#7b0000" strokeWidth="2.5" />
 
           {/* Pintas */}
-          <circle cx="35" cy="52" r="7" fill="#7b0000" opacity="0.85" />
-          <circle cx="65" cy="52" r="7" fill="#7b0000" opacity="0.85" />
-          <circle cx="33" cy="70" r="5.5" fill="#7b0000" opacity="0.85" />
-          <circle cx="67" cy="70" r="5.5" fill="#7b0000" opacity="0.85" />
-          <circle cx="50" cy="80" r="4.5" fill="#7b0000" opacity="0.7" />
+          <circle cx="36" cy="62" r="7" fill="#7b0000" opacity="0.8" />
+          <circle cx="64" cy="62" r="7" fill="#7b0000" opacity="0.8" />
+          <circle cx="34" cy="80" r="5.5" fill="#7b0000" opacity="0.8" />
+          <circle cx="66" cy="80" r="5.5" fill="#7b0000" opacity="0.8" />
+
+          {/* Brilho corpo */}
+          <ellipse cx="38" cy="50" rx="8" ry="5" fill="white" opacity="0.18" transform="rotate(-30 38 50)" />
 
           {/* Cabeca */}
-          <circle cx="50" cy="22" r="18" fill="#1a1a1a" />
+          <circle cx="50" cy="28" r="20" fill="#1a1a1a" />
 
-          {/* Olhos */}
-          <circle cx="43" cy="18" r="6" fill="white" />
-          <circle cx="57" cy="18" r="6" fill="white" />
+          {/* Olhos brancos */}
+          <circle cx="42" cy="24" r="7" fill="white" />
+          <circle cx="58" cy="24" r="7" fill="white" />
 
           {/* Pupilas */}
-          <motion.circle
-            cx="44" cy="18" r="3.5" fill="#1a1a1a"
-            animate={mood === 'thinking' ? { cx: [44, 46, 44] } : {}}
-            transition={{ duration: 1.5, repeat: Infinity }}
-          />
-          <motion.circle
-            cx="58" cy="18" r="3.5" fill="#1a1a1a"
-            animate={mood === 'thinking' ? { cx: [58, 60, 58] } : {}}
-            transition={{ duration: 1.5, repeat: Infinity }}
-          />
+          <circle cx="43" cy="24" r="4" fill="#1a1a1a" />
+          <circle cx="59" cy="24" r="4" fill="#1a1a1a" />
 
-          {/* Brilho nos olhos */}
-          <circle cx="46" cy="16" r="1.5" fill="white" />
-          <circle cx="60" cy="16" r="1.5" fill="white" />
+          {/* Brilho olhos */}
+          <circle cx="45" cy="22" r="1.8" fill="white" />
+          <circle cx="61" cy="22" r="1.8" fill="white" />
 
           {/* Antenas */}
-          <motion.line
-            x1="43" y1="6" x2="35" y2="-2"
-            stroke="#1a1a1a" strokeWidth="2" strokeLinecap="round"
-            animate={{ rotate: mood === 'happy' ? [0, 5, 0, -5, 0] : 0 }}
-            transition={{ duration: 2, repeat: Infinity, transformOrigin: '43px 6px' }}
-          />
-          <motion.line
-            x1="57" y1="6" x2="65" y2="-2"
-            stroke="#1a1a1a" strokeWidth="2" strokeLinecap="round"
-            animate={{ rotate: mood === 'happy' ? [0, -5, 0, 5, 0] : 0 }}
-            transition={{ duration: 2, repeat: Infinity, transformOrigin: '57px 6px' }}
-          />
-          <circle cx="35" cy="-2" r="3" fill="#1a1a1a" />
-          <circle cx="65" cy="-2" r="3" fill="#1a1a1a" />
+          <line x1="43" y1="10" x2="34" y2="2" stroke="#1a1a1a" strokeWidth="2.2" strokeLinecap="round" />
+          <line x1="57" y1="10" x2="66" y2="2" stroke="#1a1a1a" strokeWidth="2.2" strokeLinecap="round" />
+          <circle cx="34" cy="2" r="3.5" fill="#1a1a1a" />
+          <circle cx="66" cy="2" r="3.5" fill="#1a1a1a" />
 
-          {/* Sorriso */}
-          {mood !== 'offline' && (
+          {/* Boca */}
+          {mood === 'offline' ? (
+            <line x1="44" y1="34" x2="56" y2="34" stroke="white" strokeWidth="2" strokeLinecap="round" />
+          ) : (
             <path
-              d={mood === 'excited' ? "M 43 27 Q 50 33 57 27" : "M 44 26 Q 50 31 56 26"}
+              d={mood === 'excited' ? "M 42 33 Q 50 40 58 33" : "M 44 32 Q 50 38 56 32"}
               stroke="white" strokeWidth="2" fill="none" strokeLinecap="round"
             />
           )}
-          {mood === 'offline' && (
-            <line x1="44" y1="28" x2="56" y2="28" stroke="white" strokeWidth="2" strokeLinecap="round" />
-          )}
-
-          {/* Brilho no corpo */}
-          <ellipse cx="38" cy="40" rx="8" ry="5" fill="white" opacity="0.2" transform="rotate(-30 38 40)" />
         </svg>
       </motion.div>
 
