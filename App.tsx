@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { identifyAnimal, generateAnimalImage, getAnimalOfTheDay } from './services/geminiService';
+import { identifyAnimal, generateAnimalImage } from './services/geminiService';
 import { encodeDiscovery, decodeDiscovery, buildShareUrl } from './services/shareService';
 import { Animal } from './types';
 import { useSpeechSynthesis } from './hooks/useSpeechSynthesis';
@@ -14,11 +14,9 @@ import { SparklesIcon } from './components/icons/SparklesIcon';
 import { CameraCapture } from './components/CameraCapture';
 import { CameraIcon } from './components/icons/CameraIcon';
 import { ShareIcon } from './components/icons/ShareIcon';
-import { AnimalOfTheDay } from './components/AnimalOfTheDay';
 import { Achievements, AchievementToast, ACHIEVEMENTS, Achievement } from './components/Achievements';
 
 const STORAGE_KEY = 'biokids-v5-final';
-const AOD_STORAGE_KEY = 'biokids-aod-v1';
 
 const base64ToFile = async (base64String: string, fileName: string): Promise<File> => {
   const res = await fetch(base64String);
@@ -64,7 +62,6 @@ const fileToBase64 = (file: File): Promise<string> => {
   });
 };
 
-// Gera hash SHA-256 curto da imagem para cache por conteudo
 const getImageHash = async (file: File): Promise<string> => {
   const buffer = await file.arrayBuffer();
   const hashBuffer = await crypto.subtle.digest('SHA-256', buffer);
@@ -78,23 +75,18 @@ const ResultCard: React.FC<{ animal: Animal; onShowCollection: () => void }> = (
     const handleShareLink = async () => {
         const shareUrl = buildShareUrl(animal);
         const shareText = `Olha que legal! Encontrei um(a) ${animal.popularName} no BioKids! Veja e adicione ao seu album:`;
-        const shareData = {
-            title: `BioKids: ${animal.popularName}`,
-            text: shareText,
-            url: shareUrl,
-        };
+        const shareData = { title: `BioKids: ${animal.popularName}`, text: shareText, url: shareUrl };
         if (navigator.share) {
-            try {
-              await navigator.share(shareData);
-            } catch (err) {
+            try { await navigator.share(shareData); }
+            catch (err) {
               if ((err as Error).name !== 'AbortError') {
                   await navigator.clipboard.writeText(`${shareData.text}\n\n${shareData.url}`);
-                  alert('Link e descricao copiados! Agora cole no seu chat.');
+                  alert('Link copiado! Cole no seu chat.');
               }
             }
         } else {
             await navigator.clipboard.writeText(`${shareData.text}\n\n${shareData.url}`);
-            alert('Link e descricao copiados para a area de transferencia!');
+            alert('Link copiado para a area de transferencia!');
         }
     };
 
@@ -115,14 +107,9 @@ const ResultCard: React.FC<{ animal: Animal; onShowCollection: () => void }> = (
                 }
             } else {
                 if (navigator.share) await navigator.share({ text: textReport });
-                else {
-                    await navigator.clipboard.writeText(textReport);
-                    alert('Ficha copiada com sucesso!');
-                }
+                else { await navigator.clipboard.writeText(textReport); alert('Ficha copiada!'); }
             }
-        } catch (e) {
-            console.error("Error sharing", e);
-        }
+        } catch (e) { console.error("Error sharing", e); }
     };
 
     const InfoRow: React.FC<{ label: string; value: string; index: number }> = ({ label, value, index }) => (
@@ -154,7 +141,7 @@ const ResultCard: React.FC<{ animal: Animal; onShowCollection: () => void }> = (
                 transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
             />
             <div className="grid md:grid-cols-2 gap-5">
-                <div className="relative group">
+                <div className="relative">
                   <motion.img
                     whileHover={{ scale: 1.05, rotate: 1 }}
                     src={animal.image}
@@ -164,11 +151,7 @@ const ResultCard: React.FC<{ animal: Animal; onShowCollection: () => void }> = (
                   <div className="absolute bottom-2 right-2 bg-white/80 backdrop-blur-sm px-2 py-1 rounded-lg text-[8px] font-bold text-green-700 uppercase">Foto do Explorador</div>
                 </div>
                 <div className="flex flex-col">
-                    <motion.h2
-                        initial={{ opacity: 0, y: -10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        className="text-3xl font-black text-orange-500 mb-0"
-                    >
+                    <motion.h2 initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="text-3xl font-black text-orange-500 mb-0">
                         {animal.popularName}
                     </motion.h2>
                     <p className="text-xs italic text-gray-400 mb-3">{animal.scientificName}</p>
@@ -178,32 +161,21 @@ const ResultCard: React.FC<{ animal: Animal; onShowCollection: () => void }> = (
                         <InfoRow label="Curiosidade" value={animal.funFact} index={2} />
                     </div>
                     {animal.identificationReasoning && (
-                        <motion.div
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            transition={{ delay: 0.6 }}
+                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.6 }}
                             className="mb-4 p-3 bg-blue-50 dark:bg-blue-900/30 rounded-xl border border-blue-100 dark:border-blue-800"
                         >
-                            <h4 className="text-[8px] font-black text-blue-600 uppercase mb-1">Nota do Biologo (Analise)</h4>
+                            <h4 className="text-[8px] font-black text-blue-600 uppercase mb-1">Nota do Biologo</h4>
                             <p className="text-[11px] text-blue-800 dark:text-blue-200 leading-tight italic">"{animal.identificationReasoning}"</p>
                         </motion.div>
                     )}
                     <div className="grid grid-cols-2 gap-2">
-                        <motion.button
-                            whileHover={{ scale: 1.02 }}
-                            whileTap={{ scale: 0.98 }}
-                            onClick={handleShareLink}
-                            className="bg-blue-600 text-white py-2.5 rounded-xl font-bold text-[10px] flex items-center justify-center gap-1.5 shadow-sm transition-all"
-                        >
+                        <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={handleShareLink}
+                            className="bg-blue-600 text-white py-2.5 rounded-xl font-bold text-[10px] flex items-center justify-center gap-1.5 shadow-sm transition-all">
                             <ShareIcon className="w-3.5 h-3.5" /> TROCAR FIGURINHA
                         </motion.button>
-                        <motion.button
-                            whileHover={{ scale: 1.02 }}
-                            whileTap={{ scale: 0.98 }}
-                            onClick={handleShareComplete}
-                            className="bg-green-500 text-white py-2.5 rounded-xl font-bold text-[10px] flex items-center justify-center gap-1.5 shadow-sm transition-all"
-                        >
-                            <SparklesIcon className="w-3.5 h-3.5" /> ENVIAR FICHA (FOTO+TXT)
+                        <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={handleShareComplete}
+                            className="bg-green-500 text-white py-2.5 rounded-xl font-bold text-[10px] flex items-center justify-center gap-1.5 shadow-sm transition-all">
+                            <SparklesIcon className="w-3.5 h-3.5" /> ENVIAR FICHA
                         </motion.button>
                     </div>
                 </div>
@@ -230,8 +202,6 @@ function App() {
   const [showQuiz, setShowQuiz] = useState(false);
   const [showHabitatGame, setShowHabitatGame] = useState(false);
   const [sharedDiscovery, setSharedDiscovery] = useState<Omit<Animal, 'id'> | null>(null);
-  const [animalOfTheDay, setAnimalOfTheDay] = useState<Animal | null>(null);
-  const [loadingAOD, setLoadingAOD] = useState(false);
   const [newAchievement, setNewAchievement] = useState<Achievement | null>(null);
   const [previousCount, setPreviousCount] = useState(0);
 
@@ -243,34 +213,6 @@ function App() {
         if (Array.isArray(parsed)) setCollection(parsed);
       } catch (e) {}
     }
-
-    const loadAOD = async () => {
-      const today = new Date().toISOString().split('T')[0];
-      const savedAOD = localStorage.getItem(AOD_STORAGE_KEY);
-      if (savedAOD) {
-        try {
-          const parsed = JSON.parse(savedAOD);
-          if (parsed.date === today) {
-            setAnimalOfTheDay(parsed.animal);
-            return;
-          }
-        } catch (e) {}
-      }
-      setLoadingAOD(true);
-      try {
-        const aodData = await getAnimalOfTheDay(today);
-        const image = await generateAnimalImage(`Professional wildlife photography of ${aodData.popularName}, close up, natural lighting.`);
-        const animal: Animal = { ...aodData, id: `aod-${today}`, image };
-        setAnimalOfTheDay(animal);
-        localStorage.setItem(AOD_STORAGE_KEY, JSON.stringify({ date: today, animal }));
-      } catch (e) {
-        console.error("Failed to load AOD", e);
-      } finally {
-        setLoadingAOD(false);
-      }
-    };
-
-    loadAOD();
 
     const handleOnline = () => setIsOnline(true);
     const handleOffline = () => setIsOnline(false);
@@ -335,7 +277,7 @@ function App() {
         finalSource = await resizeImage(imageFile);
       }
 
-      // CACHE POR HASH DE IMAGEM - mesma foto = mesmo resultado sempre
+      // Cache por hash - mesma foto = mesmo resultado
       let imageHash = '';
       if (finalSource instanceof File) {
         imageHash = await getImageHash(finalSource);
@@ -349,7 +291,6 @@ function App() {
 
       const animalData = await identifyAnimal(finalSource);
 
-      // Verifica pelo nome cientifico tambem
       const existsByName = collection.find(a => a.scientificName.toLowerCase() === animalData.scientificName.toLowerCase());
       if (existsByName) {
         setResult(existsByName);
@@ -380,14 +321,6 @@ function App() {
     }
   };
 
-  const handleCollectAOD = (animal: Animal) => {
-    const exists = collection.find(a => a.scientificName.toLowerCase() === animal.scientificName.toLowerCase());
-    if (!exists) {
-      setCollection(prev => [animal, ...prev]);
-      setResult(animal);
-    }
-  };
-
   return (
     <div className="bg-green-50 dark:bg-gray-900 min-h-screen text-gray-800 font-sans pb-20">
       <header className="bg-green-600 text-white p-3 shadow-lg flex justify-between items-center sticky top-0 z-40 border-b-2 border-green-700">
@@ -397,13 +330,8 @@ function App() {
              <div className="flex items-center gap-2">
                <h1 className="text-xl font-black tracking-tight uppercase leading-none">BioKids</h1>
                {!isOnline && (
-                 <motion.span
-                   initial={{ opacity: 0, scale: 0.5 }}
-                   animate={{ opacity: 1, scale: 1 }}
-                   className="bg-red-500 text-[8px] px-1.5 py-0.5 rounded-full font-black uppercase"
-                 >
-                   Offline
-                 </motion.span>
+                 <motion.span initial={{ opacity: 0, scale: 0.5 }} animate={{ opacity: 1, scale: 1 }}
+                   className="bg-red-500 text-[8px] px-1.5 py-0.5 rounded-full font-black uppercase">Offline</motion.span>
                )}
              </div>
              <div className="flex items-center gap-1 mt-0.5">
@@ -435,15 +363,6 @@ function App() {
 
         <Achievements count={collection.length} previousCount={previousCount} />
 
-        <div className="mb-8">
-          <AnimalOfTheDay
-            animal={animalOfTheDay}
-            loading={loadingAOD}
-            onCollect={handleCollectAOD}
-            isAlreadyCollected={!!collection.find(a => a.scientificName.toLowerCase() === animalOfTheDay?.scientificName.toLowerCase())}
-          />
-        </div>
-
         <div className="bg-white dark:bg-gray-800 p-5 rounded-3xl shadow-xl border-b-4 border-green-500">
             <div className="flex gap-1 mb-4 p-1 bg-gray-100 dark:bg-gray-700 rounded-2xl">
               <button onClick={() => {setActiveTab('photo'); setIsCameraOpen(false);}} className={`flex-1 py-2 font-black rounded-xl text-xs transition-all ${activeTab === 'photo' ? 'bg-white dark:bg-gray-600 shadow-sm text-green-600' : 'text-gray-400'}`}>FOTO</button>
@@ -473,7 +392,7 @@ function App() {
                       </button>
                     </div>
                     {imagePreview && (
-                      <div className="relative mx-auto max-w-[150px] animate-jump-in mt-2">
+                      <div className="relative mx-auto max-w-[150px] mt-2">
                         <img src={imagePreview} alt="Preview" className="rounded-xl shadow-md w-full aspect-square object-cover border-2 border-white"/>
                         <button onClick={() => {setImageFile(null); setImagePreview(null);}} className="absolute -top-1.5 -right-1.5 bg-red-500 text-white w-6 h-6 rounded-full shadow-md text-sm font-bold flex items-center justify-center">&times;</button>
                       </div>
@@ -484,26 +403,21 @@ function App() {
                 )}
               </div>
             ) : (
-              <textarea
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
+              <textarea value={description} onChange={(e) => setDescription(e.target.value)}
                 placeholder="Ex: Vi um besouro com chifres na arvore..."
                 className="w-full p-4 border-2 border-gray-100 dark:border-gray-700 rounded-2xl h-24 bg-gray-50 dark:bg-gray-700 focus:ring-2 focus:ring-green-100 outline-none transition-all font-bold text-sm"
               ></textarea>
             )}
 
             {!isCameraOpen && (
-              <button
-                onClick={handleSubmit}
-                disabled={loading}
-                className="w-full mt-4 bg-orange-500 text-white font-black text-xl py-4 rounded-2xl hover:bg-orange-600 active:translate-y-0.5 shadow-[0_5px_0_rgb(194,65,12)] active:shadow-none transition-all disabled:bg-gray-300"
-              >
+              <button onClick={handleSubmit} disabled={loading}
+                className="w-full mt-4 bg-orange-500 text-white font-black text-xl py-4 rounded-2xl hover:bg-orange-600 active:translate-y-0.5 shadow-[0_5px_0_rgb(194,65,12)] active:shadow-none transition-all disabled:bg-gray-300">
                 {loading ? 'DESCOBRINDO...' : 'INVESTIGAR!'}
               </button>
             )}
         </div>
 
-        {error && <div className="mt-4 p-3 bg-red-100 text-red-700 rounded-xl font-bold text-center text-xs animate-shake">{error}</div>}
+        {error && <div className="mt-4 p-3 bg-red-100 text-red-700 rounded-xl font-bold text-center text-xs">{error}</div>}
         {loading && <div className="text-center my-10"><div className="inline-block animate-spin rounded-full h-10 w-10 border-4 border-green-500 border-t-transparent shadow-lg"></div></div>}
         <AnimatePresence>
           {result && <ResultCard key={result.id} animal={result} onShowCollection={() => setShowCollection(true)} />}
