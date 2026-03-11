@@ -94,7 +94,7 @@ Seja extremamente consistente: a mesma imagem deve sempre resultar na mesma iden
 
   return withRetry(async () => {
     const response = await ai.models.generateContent({
-      model: 'gemini-2.0-flash',
+      model: 'gemini-1.5-flash',
       contents,
       config: {
         responseMimeType: "application/json",
@@ -110,7 +110,7 @@ export const generateQuizQuestion = async (animal: Animal): Promise<QuizQuestion
     const prompt = `Crie uma pergunta sobre o animal "${animal.popularName}". Baseie-se em: ${animal.funFact}. 4 opcoes.`;
     return withRetry(async () => {
         const response = await ai.models.generateContent({
-            model: 'gemini-2.0-flash',
+            model: 'gemini-1.5-flash',
             contents: { parts: [{ text: prompt }] },
             config: { responseMimeType: "application/json", responseSchema: quizSchema }
         });
@@ -121,7 +121,7 @@ export const generateQuizQuestion = async (animal: Animal): Promise<QuizQuestion
 const generateImageForPrompt = async (prompt: string): Promise<string> => {
     try {
         const response = await ai.models.generateContent({
-            model: 'gemini-2.0-flash',
+            model: 'gemini-1.5-flash',
             contents: { parts: [{ text: `Generate image: ${prompt}` }] },
             config: { responseModalities: ['IMAGE', 'TEXT'] } as any,
         });
@@ -143,7 +143,7 @@ export const getAnimalOfTheDay = async (dateStr: string): Promise<Omit<Animal, '
   const prompt = `Data: ${dateStr}. Voce e um biologo. Escolha um animal ou inseto unico e interessante para ser o Animal do Dia e forneca detalhes no formato JSON.`;
   return withRetry(async () => {
     const response = await ai.models.generateContent({
-      model: 'gemini-2.0-flash',
+      model: 'gemini-1.5-flash',
       contents: { parts: [{ text: prompt }] },
       config: {
         responseMimeType: "application/json",
@@ -159,7 +159,7 @@ export const generateHabitatGame = async (animal: Animal): Promise<HabitatGameDa
     const prompt = `Para o animal "${animal.popularName}", gere 2 habitats incorretos.`;
     return withRetry(async () => {
         const response = await ai.models.generateContent({
-            model: 'gemini-2.0-flash',
+            model: 'gemini-1.5-flash',
             contents: { parts: [{ text: prompt }] },
             config: { responseMimeType: "application/json", responseSchema: incorrectHabitatsSchema }
         });
