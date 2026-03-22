@@ -42,6 +42,8 @@ const fileToBase64 = (file: File): Promise<string> =>
 
 const SUFFIX = `Retorne APENAS JSON valido com: popularName, scientificName, habitat, diet, funFact, soundDescription, summary, identificationReasoning.`;
 
+const VALID_MIMES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+
 export const identifyAnimal = async (source: File | string): Promise<Omit<Animal, 'id' | 'image'>> => {
   return withRetry(async () => {
     let contents;
@@ -49,7 +51,13 @@ export const identifyAnimal = async (source: File | string): Promise<Omit<Animal
       contents = [{ parts: [{ text: `Voce e um biologo. Forneca dados sobre o animal "${source}". ${SUFFIX}` }] }];
     } else {
       const base64 = await fileToBase64(source);
-      contents = [{ parts: [{ inline_data: { mime_type: source.type, data: base64 } }, { text: `Voce e um biologo especialista. Identifique este animal com precisao. ${SUFFIX}` }] }];
+      const safeMime = VALID_MIMES.includes(source.type) ? source.type : 'image/jpeg';
+      contents = [{
+        parts: [
+          { inline_data: { mime_type: safeMime, data: base64 } },
+          { text: `Voce e um biologo especialista. Identifique este animal com precisao. ${SUFFIX}` }
+        ]
+      }];
     }
     const text = await callGemini(contents);
     return JSON.parse(text.replace(/```json|```/g, '').trim());
