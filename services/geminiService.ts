@@ -1,17 +1,13 @@
 import { Animal, QuizQuestion, HabitatGameData } from '../types';
 
-const MODEL = 'gemini-2.0-flash-001';
-const API_KEY = import.meta.env.VITE_GEMINI_API_KEY || import.meta.env.VITE_API_KEY;
-const BASE_URL = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${API_KEY}`;
-
 const callGemini = async (contents: any[]): Promise<string> => {
-  const res = await fetch(BASE_URL, {
+  const res = await fetch('/api/gemini', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ contents }),
   });
   const data = await res.json();
-  if (!res.ok) throw new Error(data?.error?.message || `Erro ${res.status}`);
+  if (!res.ok) throw new Error(data?.error?.message || data?.error || `Erro ${res.status}`);
   const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
   if (!text) throw new Error('Resposta vazia');
   return text;
